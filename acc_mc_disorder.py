@@ -56,6 +56,7 @@ def run_mc(structure, dh, types, T = None, Niter = 1000, tag='', restart= False,
         output_freq_dat (int): Frequency with which data is written to .dat
 
   """
+  Niter = int(Niter)
   random.seed(seed)
   np.random.seed(seed)
   if T == None:
@@ -134,7 +135,7 @@ def run_mc(structure, dh, types, T = None, Niter = 1000, tag='', restart= False,
 
   ########################
   start_time = time.time()
-  for iter in range(last_iter, Niter*Nstep+last_iter):
+  for iter in xrange(last_iter, Niter*Nstep+last_iter):
 
     id_1 = choice(all_MC_sites)
     id_2 = choice(all_MC_sites)
