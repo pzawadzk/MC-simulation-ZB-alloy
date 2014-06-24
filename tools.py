@@ -28,6 +28,8 @@ def count_configurations_5(structure, atom_1, atoms, n_neigh=4, index_list=None,
         for i, atom in enumerate(atoms):
           if n[0].type == atom:
             count[i]  +=1
+        if sum(count) == 4:
+          break
           #print n.distance, bulk.atoms[n.index].type
       tag = ''
       for i, atom in enumerate(atoms):
@@ -45,7 +47,7 @@ def count_configurations_5(structure, atom_1, atoms, n_neigh=4, index_list=None,
 
 def get_Hf(calc):
 
-  dict ={'Cu':[], 'Sn':[], 'Sb':[], 'S':[], 'Zn':[], 'Mg':[], 'P': [], 'Al':[], 'N':[], 'O':[], 'As': [], 'Si':[], 'In':[], 'Se':[], 'Ga':[]}
+  dict ={'Cu':[], 'Sn':[], 'Sb':[], 'S':[], 'Zn':[], 'Mg':[], 'P': [], 'Al':[], 'N':[], 'O':[], 'As': [], 'Bi': [], 'Si':[], 'In':[], 'Se':[], 'Ga':[]}
 
   for id, atom in enumerate(calc.structure):
     if atom.type in dict.keys():
@@ -54,7 +56,7 @@ def get_Hf(calc):
       dict[atom.type].append(id)
 
   #print dict
-  mu = {'Cu': -1.97, 'Sn':  -3.79, 'S':  -4.00 , 'Sb': -4.29, 'Zn':-0.84, 'Mg': -0.99, 'P':-5.64, 'Al': -3.02, 'N':-8.51, 'O':-4.76, 'As': -5.06, 'Si':-4.99, 'In': -2.31, 'Se': -3.55, 'Ga': -2.37}
+  mu = {'Cu': -1.97, 'Sn':  -3.79, 'S':  -4.00 , 'Sb': -4.29, 'Zn':-0.84, 'Mg': -0.99, 'P':-5.64, 'Al': -3.02, 'N':-8.51, 'O':-4.76, 'As': -5.06, 'Bi': -4.39, 'Si':-4.99, 'In': -2.31, 'Se': -3.55, 'Ga': -2.37}
 
   import numpy as np
   E = float(calc.energy_sigma0)
@@ -97,7 +99,8 @@ def extract_motifs(dirs0, center, atoms, calc_mad=False):
                   U = 0
                 else:
                   U = 0
-                count, conf_count = count_configurations_5(calc.structure, center, atoms = atoms)
+                count, conf_count = count_configurations_5(calc.structure, center, atoms = atoms, n_neigh = 8)
+                #print count
                 conf_count  = np.array(conf_count)
                 n = conf_count/np.sum(conf_count)
                 f=open(file_data, 'w')
@@ -162,6 +165,7 @@ def residuals(p, y, x, p0, indexes):
 
 
 def print_stable_motifs(dH):
+  dh_dict = {}
 
   p = np.zeros([5,5])
   p[0]= dH[0:5]
@@ -178,51 +182,22 @@ def print_stable_motifs(dH):
 
   for i in range(5):
     for j in range(5-i):
-     N_A = i
-     N_B = j
-     N_C = (4-i-j)
-     if p[i,j]<0:
-      if N_A>0 and N_A<4 and N_C>0 and N_C<4:
-        dh = p[i-1,j] + p[i+1, j] - 2 * p[i,j] 
-        if dh <0:
-          unstable.append([i,j])
-          #if p[i-1, j] <0 and p[i+1, j]<0:
-          #  stable.append([i-1, j])
-          #  stable.append([i+1, j])
-        print '2 %d_%d_%d -> %d_%d_%d + %d_%d_%d\t\t%d meV' %(N_A, N_B, N_C, N_A-1, N_B, N_C+1,N_A+1, N_B, N_C-1, 1000*dh) 
-
-      if N_B>0 and N_B<4 and N_C>0 and N_C<4:
-        dh = p[i,j-1] + p[i, j+1] - 2 * p[i,j] 
-        if dh <0:
-          unstable.append([i,j])
-        #  if p[i, j-1] <0 and p[i, j+1]<0:
-        #    stable.append([i, j-1])
-        #    stable.append([i, j+1])
-        print '2 %d_%d_%d -> %d_%d_%d + %d_%d_%d\t\t%d meV' %(N_A, N_B, N_C, N_A, N_B-1, N_C+1,N_A, N_B+1, N_C-1, 1000*dh) 
-
-      if N_A>0 and N_A<4 and N_B>0 and N_B<4:
-        dh = p[i+1,j-1] + p[i-1, j+1] - 2 * p[i,j] 
-        if dh <0:
-          unstable.append([i,j])
-        #  if p[i+1, j-1] <0 and p[i-1, j+1]<0:
-        #    stable.append([i+1, j-1])
-        #    stable.append([i-1, j+1])
-        print '2 %d_%d_%d -> %d_%d_%d + %d_%d_%d\t\t%d meV' %(N_A, N_B, N_C, N_A-1, N_B+1, N_C,N_A+1, N_B-1, N_C, 1000*dh) 
-     else:
-      stable.remove([i,j])
-
-  #print stable
-  #print unstable
-
-  for comp in unstable:
-    if comp in stable:
-      stable.remove(comp)
-
-  for i, j in stable:
       N_A = i
       N_B = j
       N_C = (4-i-j)
-      print 'STABLE', N_A, N_B, N_C, 'ij', i, j, p[i,j]
+      if N_A>0 and N_A<4 and N_C>0 and N_C<4:
+        dh = p[i-1,j] + p[i+1, j] - 2 * p[i,j] 
+        #print '2 %d_%d_%d -> %d_%d_%d + %d_%d_%d\t\t%d meV' %(N_A, N_B, N_C, N_A-1, N_B, N_C+1,N_A+1, N_B, N_C-1, 2000*dh) 
+      if N_B>0 and N_B<4 and N_C>0 and N_C<4:
+        dh = p[i,j-1] + p[i, j+1] - 2 * p[i,j] 
+        #print '2 %d_%d_%d -> %d_%d_%d + %d_%d_%d\t\t%d meV' %(N_A, N_B, N_C, N_A, N_B-1, N_C+1,N_A, N_B+1, N_C-1, 2000*dh) 
+      if N_A>0 and N_A<4 and N_B>0 and N_B<4:
+        dh = p[i+1,j-1] + p[i-1, j+1] - 2 * p[i,j] 
+        #print '2 %d_%d_%d -> %d_%d_%d + %d_%d_%d\t\t%d meV' %(N_A, N_B, N_C, N_A-1, N_B+1, N_C,N_A+1, N_B-1, N_C, 2000*dh) 
+      else:
+        dh = 9999
+      dh_dict['%d_%d_%d'%(N_A, N_B, N_C)] = 2000 * dh
+  return dh_dict
 
 def get_Satoms(structure, atom_1,  index_list, n_neigh=4):
   from pylada.crystal import neighbors
